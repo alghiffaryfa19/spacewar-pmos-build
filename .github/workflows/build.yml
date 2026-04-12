@@ -1,0 +1,144 @@
+name: Nothing Phone 1 postmarketOS
+on:
+  push: # Build when push
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 5' # Start build every friday
+
+jobs:
+  build-image:
+    strategy:
+      matrix:
+        version: ["default"]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out build configurations
+        uses: actions/checkout@v4
+
+      - name: Set current date variable
+        run: echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+        
+      - name: Create artifact directory
+        run: |
+            mkdir out
+        
+      - name: Substitute placeholders in configs
+        run: |
+           find . -type f -name "*.cfg" -exec sed -i "s|HOME|$(echo $HOME)|;s|NPROC|$(nproc)|" {} +
+
+      - name: Install pmbootstrap from git
+        run: |
+          git clone --depth=1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+          mkdir -p ~/.local/bin
+          ln -s "$PWD/pmbootstrap/pmbootstrap.py" ~/.local/bin/pmbootstrap
+          pmbootstrap --version
+
+
+      - name: Set up pmaports
+        run: |
+          echo -e '\n\n' | pmbootstrap init || true
+          cd ~/.local/var/pmbootstrap/cache_git/pmaports
+          git remote
+          git remote add spacewar https://gitlab.postmarketos.org/alghiffaryfa19/pmaports.git 
+          git fetch spacewar
+          git reset --hard spacewar
+
+
+      # - name: Install zstd in chroot
+      #   run: |
+      #     pmbootstrap chroot -- apk add zstd
+
+      - name: Build without DE
+        run: |
+           cp nothing-spacewar.cfg ~/.config/pmbootstrap_v3.cfg
+           pmbootstrap chroot -- apk add zstd
+           pmbootstrap install --password 147147
+           pmbootstrap export
+           cp /tmp/postmarketOS-export/boot.img out/boot-nothing-spacewar.img
+           cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar-none.img
+
+      - name: Show log
+        if: always()
+        run: |
+          cat /home/runner/.local/var/pmbootstrap/log.txt
+
+      - name: Breakpoint if tests failed for nothing-spacewar without DE
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: alghiffaryfa19
+      
+      - name: Upload artifacts nothing-spacewar without DE
+        uses: actions/upload-artifact@v4
+        with:
+           name: nothing-spacewar-none_${{ env.CURRENT_DATE }}
+           path: out/*.img*
+           retention-days: 7
+            
+      - name: Build the nothing-spacewar with GNOME
+        run: |
+           yes | pmbootstrap zap
+           rm -r out/*
+           pmbootstrap install --password 147147 --add postmarketos-ui-gnome
+           pmbootstrap export
+           cp /tmp/postmarketOS-export/boot.img out/boot-nothing-spacewar.img
+           cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar-gnome.img
+
+      - name: Breakpoint if tests failed for nothing-spacewar with GNOME
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: alghiffaryfa19
+            
+      - name: Upload artifacts nothing-spacewar with GNOME
+        uses: actions/upload-artifact@v4
+        with:
+           name: nothing-spacewar-gnome_${{ env.CURRENT_DATE }}
+           path: out/*.img*
+           retention-days: 7
+
+
+      
+      - name: Build the nothing-spacewar with GNOME Mobile
+        run: |
+           yes | pmbootstrap zap
+           rm -r out/*
+           pmbootstrap install --password 147147 --add postmarketos-ui-gnome-mobile
+           pmbootstrap export
+           cp /tmp/postmarketOS-export/boot.img out/boot-nothing-spacewar.img
+           cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar-gnome-mobile.img
+
+      - name: Breakpoint if tests failed for nothing-spacewar with GNOME Mobile
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: alghiffaryfa19
+            
+      - name: Upload artifacts nothing-spacewar with GNOME Mobile
+        uses: actions/upload-artifact@v4
+        with:
+           name: nothing-spacewar-gnome-mobile_${{ env.CURRENT_DATE }}
+           path: out/*.img*
+           retention-days: 7
+                       
+      - name: Copy nothing-spacewar kernel
+        run: |
+           rm -r out/*
+           cp ~/.local/var/pmbootstrap/packages/edge/aarch64/linux-postmarketos-qcom-sc7280-*.apk out/
+      
+      - name: Upload artifacts nothing-spacewar kernel
+        uses: actions/upload-artifact@v4
+        with:
+           name: nothing-spacewar-kernel_${{ env.CURRENT_DATE }}
+           path: out/*.apk
+           retention-days: 7
+
+
+
+        
+
+        
