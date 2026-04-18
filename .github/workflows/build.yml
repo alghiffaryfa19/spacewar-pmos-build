@@ -102,26 +102,26 @@ jobs:
 
 
       
-      - name: Build the nothing-spacewar with GNOME Mobile
+      - name: Build the nothing-spacewar with Phosh
         run: |
            yes | pmbootstrap zap
            rm -r out/*
-           pmbootstrap install --password 147147 --add postmarketos-ui-gnome-mobile
+           pmbootstrap install --password 147147 --add postmarketos-ui-phosh
            pmbootstrap export
            cp /tmp/postmarketOS-export/boot.img out/boot-nothing-spacewar.img
-           cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar-gnome-mobile.img
+           cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar-phosh.img
 
-      - name: Breakpoint if tests failed for nothing-spacewar with GNOME Mobile
+      - name: Breakpoint if tests failed for nothing-spacewar with Phosh
         if: failure()
         uses: namespacelabs/breakpoint-action@v0
         with:
           duration: 30m
           authorized-users: alghiffaryfa19
             
-      - name: Upload artifacts nothing-spacewar with GNOME Mobile
+      - name: Upload artifacts nothing-spacewar with Phosh
         uses: actions/upload-artifact@v4
         with:
-           name: nothing-spacewar-gnome-mobile_${{ env.CURRENT_DATE }}
+           name: nothing-spacewar-phosh_${{ env.CURRENT_DATE }}
            path: out/*.img*
            retention-days: 7
                        
