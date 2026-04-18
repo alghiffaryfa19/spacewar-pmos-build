@@ -38,11 +38,6 @@ jobs:
       - name: Set up pmaports
         run: |
           echo -e '\n\n' | pmbootstrap init || true
-          cd ~/.local/var/pmbootstrap/cache_git/pmaports
-          git remote
-          git remote add spacewar https://gitlab.postmarketos.org/alghiffaryfa19/pmaports.git 
-          git fetch spacewar
-          git reset --hard spacewar
 
 
       # - name: Install zstd in chroot
